@@ -1,95 +1,44 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const synth = window.speechSynthesis;
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+    // retrieve text typed into textarea
+    const formData = new FormData(e.target as HTMLFormElement);
+    const text = Object.fromEntries(formData.entries())["book-content"];
+    // console.log(text);
+
+    const utterance = new SpeechSynthesisUtterance(text as string);
+    synth.speak(utterance);
+  };
+
+  return (
+    <main className="w-full h-screen bg-primary text-secondary">
+      <h1 className="w-full text-center text-4xl font-playfair-display italic tracking-widest">
+        Telltale
+      </h1>
+      <form
+        className="flex flex-col items-center gap-4 mt-10"
+        onSubmit={handleSubmit}
+      >
+        <textarea
+          className="w-5/6 p-4 bg-primary-light text-secondary font-literata
+            placeholder:font-literata rounded tracking-wide leading-relaxed
+            shadow-sm shadow-gray-500 font-medium"
+          placeholder="Tell your tale..."
+          rows={15}
+          name="book-content"
+        />
+        <button
+          type="submit"
+          className="px-6 py-2 bg-secondary text-primary rounded hover:bg-opacity-90
+          font-outfit font-bold tracking-wider"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          Read Aloud
+        </button>
+      </form>
+    </main>
   );
 }
