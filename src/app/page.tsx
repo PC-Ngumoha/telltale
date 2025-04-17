@@ -136,11 +136,11 @@ async function scanPDFFile(file: File, ref: RefObject<HTMLDivElement>) {
         }
       }
       // Add extra newline between pages to set it apart
-      text += pageText + (i < pdf.numPages ? "\n\n" : "");
+      text += pageText + (i < pdf.numPages ? "\n\n" : " ");
     }
 
     if (ref.current) {
-      ref.current.innerHTML = text.replaceAll("\n", "<br />");
+      ref.current.innerHTML = text.replaceAll("\n", "<br /><br />");
     }
   } catch (error) {
     alert(`PDF processing error: ${error}`);
