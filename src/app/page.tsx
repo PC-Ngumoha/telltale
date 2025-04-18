@@ -8,17 +8,42 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
+  const synthRef = useRef(window.speechSynthesis);
 
+  /**
+   * Start reading from text area
+   * @param e
+   */
   const handleReadStart = (e: React.FormEvent) => {
     e.preventDefault();
-    const synth = window.speechSynthesis;
-    const text = contentsRef.current?.textContent;
-    if (text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      synth.speak(utterance);
+    // const synth = window.speechSynthesis;
+    if (synthRef.current) {
+      const text = contentsRef.current?.textContent;
+      if (text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        synthRef.current.speak(utterance);
+      }
     }
   };
 
+  /**
+   * Stop reading from text area
+   * @param e
+   */
+  const handleReadStop = (e: React.FormEvent) => {
+    if (synthRef.current) {
+      // Only stop speaking if already speaking.
+      if (synthRef.current.speaking) {
+        synthRef.current.cancel();
+      }
+    }
+  };
+
+  /**
+   * Determine how selected file is parsed and presented.
+   * @param evt
+   * @returns
+   */
   const handleFileSelection = async (
     evt: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -59,14 +84,26 @@ export default function Home() {
           ref={contentsRef}
           contentEditable={false}
         />
-        {/* Start speaking */}
-        <button
-          className="px-6 py-2 bg-secondary text-primary rounded hover:bg-opacity-90
-          font-outfit font-bold tracking-wider"
-          onClick={handleReadStart}
-        >
-          Read Aloud
-        </button>
+        {/* Speech Control Area */}
+        <div className="w-full flex justify-center">
+          {/* Start speaking */}
+          <button
+            className="px-6 py-2 bg-secondary text-primary rounded hover:bg-opacity-90
+          font-outfit font-bold tracking-wider mx-1"
+            onClick={handleReadStart}
+          >
+            Read
+          </button>
+
+          {/* Stop speaking */}
+          <button
+            className="px-6 py-2 bg-secondary text-primary rounded hover:bg-opacity-90
+          font-outfit font-bold tracking-wider mx-1"
+            onClick={handleReadStop}
+          >
+            Quiet
+          </button>
+        </div>
       </div>
     </main>
   );
@@ -96,21 +133,14 @@ function scanTXTFile(file: File, ref: RefObject<HTMLDivElement>) {
 
 /**
  * Utility function: Read .pdf files
+ *
+ * TODO: Fix detection of newline in PDF documents
  */
 async function scanPDFFile(file: File, ref: RefObject<HTMLDivElement>) {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
-
-    // for (let i = 1; i <= pdf.numPages; i++) {
-    //   const page = await pdf.getPage(i);
-    //   const content = await page.getTextContent();
-    //   const pageText = content.items
-    //     .map((item: any) => ("str" in item ? item.str : "\n"))
-    //     .join(" ");
-    //   text += pageText + "\n";
-    // }
 
     // Modification to enable scanner be able to take account
     // for the occurrence of newline characters in the file.
@@ -136,7 +166,7 @@ async function scanPDFFile(file: File, ref: RefObject<HTMLDivElement>) {
         }
       }
       // Add extra newline between pages to set it apart
-      text += pageText + (i < pdf.numPages ? "\n\n" : " ");
+      text += pageText + (i < pdf.numPages ? "\n" : " ");
     }
 
     if (ref.current) {
