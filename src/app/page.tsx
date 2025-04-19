@@ -1,10 +1,11 @@
 "use client";
 
-import React, { RefObject, useRef, useEffect } from "react";
+import React, { RefObject, useRef, useEffect, useState } from "react";
 
 export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
   const synthRef = useRef<SpeechSynthesis>(null);
+  const [isPlaying, setPlaying] = useState(false);
 
   useEffect(() => {
     // Setting up synth for use in the later parts of the app
@@ -14,16 +15,60 @@ export default function Home() {
   }, []);
 
   /**
-   * Start reading from text area
+   * Start or Resume reading from text area
    * @param e
    */
   const handleReadStart = (e: React.FormEvent) => {
     e.preventDefault();
     if (synthRef.current) {
-      const text = contentsRef.current?.textContent;
-      if (text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        synthRef.current.speak(utterance);
+      // Resume if an utterance exists and was paused
+      if (synthRef.current.speaking && synthRef.current.paused) {
+        synthRef.current.resume(); // resume utterance
+      } else {
+        // Otherwise create new utterance and speak
+        const text = contentsRef.current?.textContent;
+        if (text) {
+          const utterance = new SpeechSynthesisUtterance(text);
+
+          // Setting event listeners on the speech utterance object
+          utterance.onstart = () => {
+            setPlaying(true);
+          };
+
+          utterance.onresume = () => {
+            setPlaying(true);
+          };
+
+          utterance.onpause = () => {
+            setPlaying(false);
+          };
+
+          utterance.onend = () => {
+            setPlaying(false);
+          };
+
+          synthRef.current.speak(utterance);
+        }
+      }
+
+      // set playing to true
+      // setPlaying(true);
+    }
+  };
+
+  /**
+   * Pause reading from text area
+   * @param e
+   */
+  const handleReadPause = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (synthRef.current) {
+      // only pause utterance if it exists and has not yet been paused.
+      if (synthRef.current.speaking && !synthRef.current.paused) {
+        synthRef.current.pause();
+
+        // set playing to false
+        // setPlaying(false);
       }
     }
   };
@@ -33,10 +78,14 @@ export default function Home() {
    * @param e
    */
   const handleReadStop = (e: React.FormEvent) => {
+    e.preventDefault();
     if (synthRef.current) {
-      // Only stop speaking if already speaking.
+      // Only stop utterance if it exists.
       if (synthRef.current.speaking) {
         synthRef.current.cancel();
+
+        // set playing to false
+        setPlaying(false);
       }
     }
   };
@@ -86,29 +135,54 @@ export default function Home() {
         />
         {/* Speech Control Area */}
         <div className="w-full flex justify-center">
-          {/* Start speaking */}
-          <button
-            className="p-2 bg-secondary text-primary rounded hover:bg-opacity-90
+          {/* Start, pause or resume speaking */}
+          {!isPlaying ? (
+            <button
+              className="p-2 bg-secondary text-primary rounded hover:bg-opacity-90
           font-outfit font-bold tracking-wider mx-1"
-            onClick={handleReadStart}
-          >
-            {/* Play Icon */}
-            <svg
-              className="w-8 h-8 text-gray-800 dark:text-white"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              fill="currentColor"
-              viewBox="0 0 24 24"
+              onClick={handleReadStart}
             >
-              <path
-                fillRule="evenodd"
-                d="M8.6 5.2A1 1 0 0 0 7 6v12a1 1 0 0 0 1.6.8l8-6a1 1 0 0 0 0-1.6l-8-6Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
+              {/* Play Icon */}
+              <svg
+                className="w-8 h-8 text-gray-800 dark:text-white"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.6 5.2A1 1 0 0 0 7 6v12a1 1 0 0 0 1.6.8l8-6a1 1 0 0 0 0-1.6l-8-6Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          ) : (
+            <button
+              className="p-2 bg-secondary text-primary rounded hover:bg-opacity-90
+          font-outfit font-bold tracking-wider mx-1"
+              onClick={handleReadPause}
+            >
+              {/* Pause Icon */}
+              <svg
+                className="w-6 h-6 text-gray-800 dark:text-white"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8 5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8Zm7 0a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          )}
 
           {/* Stop speaking */}
           <button
