@@ -1,14 +1,17 @@
 "use client";
 
-import React, { RefObject, useRef } from "react";
-import * as pdfjsLib from "pdfjs-dist";
-
-// Set the worker source (use .js, not .mjs)
-pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+import React, { RefObject, useRef, useEffect } from "react";
 
 export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
-  const synthRef = useRef(window.speechSynthesis);
+  const synthRef = useRef<SpeechSynthesis>(null);
+
+  useEffect(() => {
+    // Setting up synth for use in the later parts of the app
+    if (typeof window !== undefined) {
+      synthRef.current = window.speechSynthesis;
+    }
+  }, []);
 
   /**
    * Start reading from text area
@@ -16,7 +19,6 @@ export default function Home() {
    */
   const handleReadStart = (e: React.FormEvent) => {
     e.preventDefault();
-    // const synth = window.speechSynthesis;
     if (synthRef.current) {
       const text = contentsRef.current?.textContent;
       if (text) {
@@ -53,8 +55,6 @@ export default function Home() {
     try {
       if (file.type === "text/plain") {
         scanTXTFile(file, contentsRef as RefObject<HTMLDivElement>);
-      } else if (file.type === "application/pdf") {
-        scanPDFFile(file, contentsRef as RefObject<HTMLDivElement>);
       } else {
         alert(`File: ${file.name} could not be opened`);
       }
@@ -88,20 +88,46 @@ export default function Home() {
         <div className="w-full flex justify-center">
           {/* Start speaking */}
           <button
-            className="px-6 py-2 bg-secondary text-primary rounded hover:bg-opacity-90
+            className="p-2 bg-secondary text-primary rounded hover:bg-opacity-90
           font-outfit font-bold tracking-wider mx-1"
             onClick={handleReadStart}
           >
-            Read
+            {/* Play Icon */}
+            <svg
+              className="w-8 h-8 text-gray-800 dark:text-white"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.6 5.2A1 1 0 0 0 7 6v12a1 1 0 0 0 1.6.8l8-6a1 1 0 0 0 0-1.6l-8-6Z"
+                clipRule="evenodd"
+              />
+            </svg>
           </button>
 
           {/* Stop speaking */}
           <button
-            className="px-6 py-2 bg-secondary text-primary rounded hover:bg-opacity-90
+            className="p-2 bg-secondary text-primary rounded hover:bg-opacity-90
           font-outfit font-bold tracking-wider mx-1"
             onClick={handleReadStop}
           >
-            Quiet
+            {/* Stop Icon */}
+            <svg
+              className="w-8 h-8 text-gray-800 dark:text-white"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M7 5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7Z" />
+            </svg>
           </button>
         </div>
       </div>
@@ -129,53 +155,4 @@ function scanTXTFile(file: File, ref: RefObject<HTMLDivElement>) {
   };
 
   reader.readAsText(file);
-}
-
-/**
- * Utility function: Read .pdf files
- *
- * TODO: Fix detection of newline in PDF documents
- */
-async function scanPDFFile(file: File, ref: RefObject<HTMLDivElement>) {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = "";
-
-    // Modification to enable scanner be able to take account
-    // for the occurrence of newline characters in the file.
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      let lastY: number | null = null;
-      let pageText = "";
-
-      for (const item of content.items) {
-        if ("str" in item && item.str.trim()) {
-          const y = item.transform[5]; // y-coord. of text item.
-          const text = item.str;
-
-          // Detecting newline by comparing y-coordinates;
-          if (lastY !== null && Math.abs(lastY - y) > 5) {
-            // Threshold value of 5 points to detect a line break
-            pageText += "\n";
-          }
-
-          pageText += text;
-          lastY = y;
-        }
-      }
-      // Add extra newline between pages to set it apart
-      text += pageText + (i < pdf.numPages ? "\n" : " ");
-    }
-
-    if (ref.current) {
-      ref.current.innerHTML = text.replaceAll("\n", "<br /><br />");
-    }
-  } catch (error) {
-    alert(`PDF processing error: ${error}`);
-    if (ref.current) {
-      ref.current.innerHTML = `<b>Failed to process PDF file</b><br />${error}`;
-    }
-  }
 }
