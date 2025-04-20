@@ -6,13 +6,39 @@ export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
   const synthRef = useRef<SpeechSynthesis>(null);
   const [isPlaying, setPlaying] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice>();
 
   useEffect(() => {
     // Setting up synth for use in the later parts of the app
     if (typeof window !== undefined) {
       synthRef.current = window.speechSynthesis;
     }
+
+    const populateVoices = () => {
+      if (typeof speechSynthesis === undefined) {
+        return;
+      }
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+      setSelectedVoice(availableVoices[0] || null);
+    };
+
+    // call populateVoices
+    populateVoices();
+    if (
+      typeof speechSynthesis !== undefined &&
+      speechSynthesis.onvoiceschanged !== undefined
+    ) {
+      speechSynthesis.onvoiceschanged = populateVoices;
+    }
   }, []);
+
+  // Aids in the selection of the voice
+  const handleVoiceChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
+    const voiceIndex = evt.target.value;
+    setSelectedVoice(voices[Number(voiceIndex)]);
+  };
 
   /**
    * Start or Resume reading from text area
@@ -24,6 +50,9 @@ export default function Home() {
       // Resume if an utterance exists and was paused
       if (synthRef.current.speaking && synthRef.current.paused) {
         synthRef.current.resume(); // resume utterance
+
+        // set playing to true
+        setPlaying(true);
       } else {
         // Otherwise create new utterance and speak
         const text = contentsRef.current?.textContent;
@@ -31,28 +60,38 @@ export default function Home() {
           const utterance = new SpeechSynthesisUtterance(text);
 
           // Setting event listeners on the speech utterance object
-          utterance.onstart = () => {
-            setPlaying(true);
-          };
+          // utterance.onstart = () => {
+          //   setPlaying(true);
+          // };
 
-          utterance.onresume = () => {
-            setPlaying(true);
-          };
+          // utterance.onresume = () => {
+          //   setPlaying(true);
+          // };
 
-          utterance.onpause = () => {
-            setPlaying(false);
-          };
+          // utterance.onpause = () => {
+          //   setPlaying(false);
+          // };
 
           utterance.onend = () => {
+            // Once the utterance ends, it should be canceled
+            synthRef.current?.cancel();
+
             setPlaying(false);
           };
 
+          // If new voice selected, change voice
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+          }
+
+          // utterance.voice = selectedVoice;
+
           synthRef.current.speak(utterance);
+
+          // set playing to true
+          setPlaying(true);
         }
       }
-
-      // set playing to true
-      // setPlaying(true);
     }
   };
 
@@ -68,7 +107,7 @@ export default function Home() {
         synthRef.current.pause();
 
         // set playing to false
-        // setPlaying(false);
+        setPlaying(false);
       }
     }
   };
@@ -203,6 +242,20 @@ export default function Home() {
               <path d="M7 5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7Z" />
             </svg>
           </button>
+        </div>
+        {/* Voice selection area */}
+        <div className="w-5/6 bg-secondary flex justify-center rounded-lg">
+          <select
+            onChange={handleVoiceChange}
+            className="bg-transparent text-primary-light p-2 w-[90%] font-bold focus:outline-0"
+          >
+            {/* Populate dropdown with voices */}
+            {voices?.map((voice, idx) => (
+              <option key={idx} value={idx}>{`Voice: ${voice.name} ${
+                voice.default ? "[DEFAULT]" : ""
+              }`}</option>
+            ))}
+          </select>
         </div>
       </div>
     </main>
