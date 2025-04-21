@@ -2,7 +2,7 @@
 
 import React, { RefObject, useRef, useEffect, useState } from "react";
 import { Play, Pause, Stop } from "@/icons";
-// import "@/app/Slider.module.css";
+import { Slider } from "@/components/ui/slider";
 
 export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
@@ -10,6 +10,7 @@ export default function Home() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice>();
   const [pitch, setPitch] = useState(1.0);
+  const [rate, setRate] = useState(1.0);
 
   useEffect(() => {
     const populateVoices = () => {
@@ -85,6 +86,10 @@ export default function Home() {
         // Set voice if selected by user
         utterance.voice = selectedVoice ?? null;
 
+        // set pitch & rate
+        utterance.pitch = pitch;
+        utterance.rate = rate;
+
         // Start speaking
         speechSynthesis.speak(utterance);
         setPlaying(true);
@@ -137,7 +142,7 @@ export default function Home() {
   };
 
   return (
-    <main className="w-full h-fit bg-primary text-secondary py-3">
+    <main className="w-full h-fit bg-primary text-secondary-main py-3">
       <h1 className="w-full text-center text-4xl font-playfair-display italic tracking-widest">
         Telltale
       </h1>
@@ -151,7 +156,7 @@ export default function Home() {
         />
         {/* Document Contents */}
         <div
-          className="w-5/6 h-[50vh] p-4 bg-primary-light text-secondary font-literata
+          className="w-5/6 h-[50vh] p-4 bg-primary-light text-secondary-main font-literata
             placeholder:font-literata rounded tracking-wide leading-relaxed
             shadow-sm shadow-gray-500 font-medium overflow-y-auto"
           ref={contentsRef}
@@ -162,7 +167,7 @@ export default function Home() {
           {/* Start, pause or resume speaking */}
           {!isPlaying ? (
             <button
-              className="p-1 bg-secondary text-primary rounded hover:bg-opacity-90
+              className="p-1 bg-secondary-main text-primary rounded hover:bg-opacity-90
           font-outfit font-bold tracking-wider mx-1"
               onClick={handleReadStart}
             >
@@ -171,7 +176,7 @@ export default function Home() {
             </button>
           ) : (
             <button
-              className="p-1 bg-secondary text-primary rounded hover:bg-opacity-90
+              className="p-1 bg-secondary-main text-primary rounded hover:bg-opacity-90
           font-outfit font-bold tracking-wider mx-1"
               onClick={handleReadPause}
             >
@@ -182,7 +187,7 @@ export default function Home() {
 
           {/* Stop speaking */}
           <button
-            className="p-1 bg-secondary text-primary rounded hover:bg-opacity-90
+            className="p-1 bg-secondary-main text-primary rounded hover:bg-opacity-90
           font-outfit font-bold tracking-wider mx-1"
             onClick={handleReadStop}
           >
@@ -191,7 +196,7 @@ export default function Home() {
           </button>
         </div>
         {/* Voice selection area */}
-        <div className="w-5/6 bg-secondary flex justify-center rounded-lg p-1">
+        <div className="w-5/6 bg-secondary-main flex justify-center rounded p-1">
           <label
             htmlFor="voices"
             className="text-primary self-center font-bold"
@@ -214,26 +219,44 @@ export default function Home() {
         </div>
         {/* Native TTS support warning message */}
         <blockquote
-          className="text-secondary text-xs w-5/6 bg-primary-light
-         p-2 italic tracking-widest border-l-2 border-l-secondary"
+          className="text-secondary-main text-xs w-5/6 bg-primary-light
+         p-2 italic tracking-widest border-l-2 border-l-secondary-main"
         >
           “Only system voices are shown for optimal performance. If none appear,
           please enable system TTS voices in your OS.”
         </blockquote>
         {/* Speed & Pitch controls */}
-        <div className="w-5/6 bg-primary-light flex justify-center rounded-lg p-2">
+        <div
+          className="w-5/6 bg-primary-light flex justify-center rounded p-2
+          font-bold"
+        >
+          {/* Speed controls */}
+          <div className="text-secondary-main flex items-center flex-1 p-1">
+            <label htmlFor="rate">Speed: </label>
+            <Slider
+              id="rate"
+              defaultValue={[1.0]}
+              value={[rate]}
+              min={0.1}
+              max={4.0}
+              step={0.1}
+              className="ml-2"
+              onValueChange={(value) => setRate(value[0])}
+            />
+          </div>
+
           {/* Pitch controls */}
-          <div className="text-secondary flex items-center flex-1 p-1">
+          <div className="text-secondary-main flex items-center flex-1 p-1">
             <label htmlFor="pitch">Pitch: </label>
-            <input
-              type="range"
-              id="pitch-range"
+            <Slider
+              id="pitch"
+              defaultValue={[1.0]}
+              value={[pitch]}
               min={0.0}
               max={2.0}
-              value={pitch}
               step={0.1}
-              onChange={(e) => setPitch(Number(e.target.value))}
-              className="w-full ml-2"
+              className="ml-2"
+              onValueChange={(value) => setPitch(value[0])}
             />
           </div>
         </div>
