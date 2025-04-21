@@ -2,12 +2,14 @@
 
 import React, { RefObject, useRef, useEffect, useState } from "react";
 import { Play, Pause, Stop } from "@/icons";
+// import "@/app/Slider.module.css";
 
 export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setPlaying] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice>();
+  const [pitch, setPitch] = useState(1.0);
 
   useEffect(() => {
     const populateVoices = () => {
@@ -135,7 +137,7 @@ export default function Home() {
   };
 
   return (
-    <main className="w-full h-screen bg-primary text-secondary">
+    <main className="w-full h-fit bg-primary text-secondary py-3">
       <h1 className="w-full text-center text-4xl font-playfair-display italic tracking-widest">
         Telltale
       </h1>
@@ -210,6 +212,7 @@ export default function Home() {
             ))}
           </select>
         </div>
+        {/* Native TTS support warning message */}
         <blockquote
           className="text-secondary text-xs w-5/6 bg-primary-light
          p-2 italic tracking-widest border-l-2 border-l-secondary"
@@ -217,6 +220,23 @@ export default function Home() {
           “Only system voices are shown for optimal performance. If none appear,
           please enable system TTS voices in your OS.”
         </blockquote>
+        {/* Speed & Pitch controls */}
+        <div className="w-5/6 bg-primary-light flex justify-center rounded-lg p-2">
+          {/* Pitch controls */}
+          <div className="text-secondary flex items-center flex-1 p-1">
+            <label htmlFor="pitch">Pitch: </label>
+            <input
+              type="range"
+              id="pitch-range"
+              min={0.0}
+              max={2.0}
+              value={pitch}
+              step={0.1}
+              onChange={(e) => setPitch(Number(e.target.value))}
+              className="w-full ml-2"
+            />
+          </div>
+        </div>
       </div>
     </main>
   );
