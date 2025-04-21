@@ -5,22 +5,24 @@ import { Play, Pause, Stop } from "@/icons";
 
 export default function Home() {
   const contentsRef = useRef<HTMLDivElement>(null);
-  const synthRef = useRef<SpeechSynthesis>(null);
   const [isPlaying, setPlaying] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice>();
 
   useEffect(() => {
-    // Setting up synth for use in the later parts of the app
-    if (typeof window !== undefined) {
-      synthRef.current = window.speechSynthesis;
-    }
-
     const populateVoices = () => {
       if (typeof speechSynthesis === undefined) {
         return;
       }
-      const availableVoices = window.speechSynthesis.getVoices();
+      const availableVoices = window.speechSynthesis
+        .getVoices()
+        .filter((voice) => {
+          // filter out chrome-specific TTS voices
+          return (
+            !voice.name.toLowerCase().includes("google") &&
+            !voice.name.toLowerCase().includes("chromium")
+          );
+        });
       setVoices(availableVoices);
       setSelectedVoice(availableVoices[0] || null);
     };
@@ -47,48 +49,43 @@ export default function Home() {
    */
   const handleReadStart = (e: React.FormEvent) => {
     e.preventDefault();
-    if (synthRef.current) {
-      // Resume if an utterance exists and was paused
-      if (synthRef.current.speaking && synthRef.current.paused) {
-        synthRef.current.resume(); // resume utterance
 
-        // set playing to true
+    // If paused, resume
+    if (speechSynthesis.speaking && speechSynthesis.paused) {
+      speechSynthesis.resume();
+      setPlaying(true);
+    } else {
+      // Otherwise
+      // Clear utterance queue
+      speechSynthesis.cancel();
+
+      const contents = contentsRef.current?.textContent;
+      if (contents) {
+        // create new utterance
+        const utterance = new SpeechSynthesisUtterance(contents);
+
+        // Cancel utterance when done
+        utterance.onend = () => {
+          speechSynthesis.cancel();
+          setPlaying(false);
+
+          console.log("Done speaking");
+        };
+
+        utterance.onresume = () => {
+          console.log("Resumed speaking");
+        };
+
+        utterance.onstart = () => {
+          console.log("Started speaking");
+        };
+
+        // Set voice if selected by user
+        utterance.voice = selectedVoice ?? null;
+
+        // Start speaking
+        speechSynthesis.speak(utterance);
         setPlaying(true);
-      } else {
-        // Otherwise create new utterance and speak
-        const text = contentsRef.current?.textContent;
-        if (text) {
-          const utterance = new SpeechSynthesisUtterance(text);
-
-          // Setting event listeners on the speech utterance object
-          // utterance.onstart = () => {
-          //   setPlaying(true);
-          // };
-
-          // utterance.onresume = () => {
-          //   setPlaying(true);
-          // };
-
-          // utterance.onpause = () => {
-          //   setPlaying(false);
-          // };
-
-          utterance.onend = () => {
-            setPlaying(false);
-          };
-
-          // If new voice selected, change voice
-          if (selectedVoice) {
-            utterance.voice = selectedVoice;
-          }
-
-          // utterance.voice = selectedVoice;
-
-          synthRef.current.speak(utterance);
-
-          // set playing to true
-          setPlaying(true);
-        }
       }
     }
   };
@@ -99,14 +96,9 @@ export default function Home() {
    */
   const handleReadPause = (e: React.FormEvent) => {
     e.preventDefault();
-    if (synthRef.current) {
-      // only pause utterance if it exists and has not yet been paused.
-      if (synthRef.current.speaking && !synthRef.current.paused) {
-        synthRef.current.pause();
-
-        // set playing to false
-        setPlaying(false);
-      }
+    if (speechSynthesis.speaking && !speechSynthesis.paused) {
+      speechSynthesis.pause();
+      setPlaying(false);
     }
   };
 
@@ -116,15 +108,8 @@ export default function Home() {
    */
   const handleReadStop = (e: React.FormEvent) => {
     e.preventDefault();
-    if (synthRef.current) {
-      // Only stop utterance if it exists.
-      if (synthRef.current.speaking) {
-        synthRef.current.cancel();
-
-        // set playing to false
-        setPlaying(false);
-      }
-    }
+    speechSynthesis.cancel();
+    setPlaying(false);
   };
 
   /**
@@ -204,19 +189,34 @@ export default function Home() {
           </button>
         </div>
         {/* Voice selection area */}
-        <div className="w-5/6 bg-secondary flex justify-center rounded-lg">
+        <div className="w-5/6 bg-secondary flex justify-center rounded-lg p-1">
+          <label
+            htmlFor="voices"
+            className="text-primary self-center font-bold"
+          >
+            Voices:{" "}
+          </label>
           <select
+            id="voices"
             onChange={handleVoiceChange}
-            className="bg-transparent text-primary-light p-2 w-[90%] font-bold focus:outline-0"
+            className="bg-transparent text-primary-light p-1 w-[90%] focus:outline-0
+            italic tracking-tighter"
           >
             {/* Populate dropdown with voices */}
             {voices?.map((voice, idx) => (
-              <option key={idx} value={idx}>{`Voice: ${voice.name} ${
+              <option key={idx} value={idx}>{`${voice.name} ${
                 voice.default ? "[DEFAULT]" : ""
               }`}</option>
             ))}
           </select>
         </div>
+        <blockquote
+          className="text-secondary text-xs w-5/6 bg-primary-light
+         p-2 italic tracking-widest border-l-2 border-l-secondary"
+        >
+          “Only system voices are shown for optimal performance. If none appear,
+          please enable system TTS voices in your OS.”
+        </blockquote>
       </div>
     </main>
   );
