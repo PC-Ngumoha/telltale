@@ -12,13 +12,15 @@ import { Play, Pause, Stop } from "@/icons";
 import { Slider } from "@/components/ui/slider";
 
 export default function Home() {
-  // const contentsRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setPlaying] = useState(false);
   const [content, setContent] = useState("");
+  const [sentences, setSentences] = useState<string[]>([]);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice>();
   const [pitch, setPitch] = useState(1.0);
   const [rate, setRate] = useState(1.0);
+  const [sentenceIndex, setSentenceIndex] = useState<number | null>(null);
+  const sentenceRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
     const populateVoices = () => {
@@ -48,10 +50,41 @@ export default function Home() {
     }
   }, []);
 
+  // Splits content into sentences on content change
+  useEffect(() => {
+    setSentences(content.match(/[^.!?]+[.!?]?/g) || []);
+  }, [content]);
+
+  // Tracks the movement of highlighted span tags
+  useEffect(() => {
+    if (sentenceIndex !== null && sentenceRefs.current[sentenceIndex]) {
+      // and scrolls them into view smoothly.
+      sentenceRefs.current[sentenceIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [sentenceIndex]);
+
   // Aids in the selection of the voice
   const handleVoiceChange = (evt: React.ChangeEvent<HTMLSelectElement>) => {
     const voiceIndex = evt.target.value;
     setSelectedVoice(voices[Number(voiceIndex)]);
+  };
+
+  /**
+   * Utility: calculates the sentence index from the utterance index
+   * @param sentences
+   * @param charIndex
+   * @returns
+   */
+  const getSentenceIndex = (sentences: string[], charIndex: number) => {
+    let total = 0;
+    for (let i = 0; i < sentences.length; i++) {
+      total += sentences[i].length;
+      if (charIndex < total) return i;
+    }
+    return -1;
   };
 
   /**
@@ -66,9 +99,7 @@ export default function Home() {
       speechSynthesis.resume();
       setPlaying(true);
     } else {
-      // Otherwise
-      // Clear utterance queue
-      speechSynthesis.cancel();
+      speechSynthesis.cancel(); // clear utterance queue
 
       //   const contents = contentsRef.current?.textContent;
       if (content !== "") {
@@ -79,16 +110,24 @@ export default function Home() {
         utterance.onend = () => {
           speechSynthesis.cancel();
           setPlaying(false);
-
-          console.log("Done speaking");
+          setSentenceIndex(null); // clears the highlighting
+          // console.log("Done speaking");
         };
 
-        utterance.onresume = () => {
-          console.log("Resumed speaking");
-        };
+        // utterance.onresume = () => {
+        //   console.log("Resumed speaking");
+        // };
 
-        utterance.onstart = () => {
-          console.log("Started speaking");
+        // utterance.onstart = () => {
+        //   console.log("Started speaking");
+        // };
+
+        // Keeping track of current sentence being spoken by TTS
+        utterance.onboundary = (evt) => {
+          if (evt.name === "sentence") {
+            const idx = getSentenceIndex(sentences, evt.charIndex);
+            setSentenceIndex(idx);
+          }
         };
 
         // Set voice if selected by user
@@ -140,7 +179,6 @@ export default function Home() {
 
     try {
       if (file.type === "text/plain") {
-        // scanTXTFile(file, contentsRef as RefObject<HTMLDivElement>);
         scanTXTFile(file, setContent);
       } else {
         alert(`File: ${file.name} could not be opened`);
@@ -168,13 +206,23 @@ export default function Home() {
           className="w-5/6 h-[50vh] p-4 bg-primary-light text-secondary-main font-literata
             placeholder:font-literata rounded tracking-wide leading-relaxed
             shadow-sm shadow-gray-500 font-medium overflow-y-auto"
-          // ref={contentsRef}
           contentEditable={false}
+          style={{ whiteSpace: "pre-line" }}
         >
-          {content.split("\n").map((line, idx) => (
-            <p key={idx}>
-              {line} <br />
-            </p>
+          {sentences.map((sentence, idx) => (
+            <span
+              key={idx}
+              ref={(el) => {
+                sentenceRefs.current[idx] = el;
+              }}
+              className={
+                idx === sentenceIndex
+                  ? "font-bold text-accent-main tracking-wider"
+                  : ""
+              }
+            >
+              {sentence}
+            </span>
           ))}
         </div>
         {/* Speech Control Area */}
@@ -293,13 +341,7 @@ function scanTXTFile(file: File, setter: Dispatch<SetStateAction<string>>) {
   };
 
   reader.onload = () => {
-    // if (ref.current) {
-    //   const output = reader.result as string;
-    //   ref.current.innerHTML = output.replaceAll("\n", "<br />");
-    // }
-    if (setter) {
-      setter(reader.result as string);
-    }
+    setter(reader.result as string);
   };
 
   reader.readAsText(file);
