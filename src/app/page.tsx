@@ -1,12 +1,20 @@
 "use client";
 
-import React, { RefObject, useRef, useEffect, useState } from "react";
+import React, {
+  RefObject,
+  useRef,
+  useEffect,
+  useState,
+  SetStateAction,
+  Dispatch,
+} from "react";
 import { Play, Pause, Stop } from "@/icons";
 import { Slider } from "@/components/ui/slider";
 
 export default function Home() {
-  const contentsRef = useRef<HTMLDivElement>(null);
+  // const contentsRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setPlaying] = useState(false);
+  const [content, setContent] = useState("");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice>();
   const [pitch, setPitch] = useState(1.0);
@@ -62,10 +70,10 @@ export default function Home() {
       // Clear utterance queue
       speechSynthesis.cancel();
 
-      const contents = contentsRef.current?.textContent;
-      if (contents) {
+      //   const contents = contentsRef.current?.textContent;
+      if (content !== "") {
         // create new utterance
-        const utterance = new SpeechSynthesisUtterance(contents);
+        const utterance = new SpeechSynthesisUtterance(content);
 
         // Cancel utterance when done
         utterance.onend = () => {
@@ -132,7 +140,8 @@ export default function Home() {
 
     try {
       if (file.type === "text/plain") {
-        scanTXTFile(file, contentsRef as RefObject<HTMLDivElement>);
+        // scanTXTFile(file, contentsRef as RefObject<HTMLDivElement>);
+        scanTXTFile(file, setContent);
       } else {
         alert(`File: ${file.name} could not be opened`);
       }
@@ -159,9 +168,15 @@ export default function Home() {
           className="w-5/6 h-[50vh] p-4 bg-primary-light text-secondary-main font-literata
             placeholder:font-literata rounded tracking-wide leading-relaxed
             shadow-sm shadow-gray-500 font-medium overflow-y-auto"
-          ref={contentsRef}
+          // ref={contentsRef}
           contentEditable={false}
-        />
+        >
+          {content.split("\n").map((line, idx) => (
+            <p key={idx}>
+              {line} <br />
+            </p>
+          ))}
+        </div>
         {/* Speech Control Area */}
         <div className="w-full flex justify-center">
           {/* Start, pause or resume speaking */}
@@ -270,7 +285,7 @@ export default function Home() {
 /**
  * Utility function: Read .txt files
  */
-function scanTXTFile(file: File, ref: RefObject<HTMLDivElement>) {
+function scanTXTFile(file: File, setter: Dispatch<SetStateAction<string>>) {
   const reader = new FileReader();
 
   reader.onerror = () => {
@@ -278,9 +293,12 @@ function scanTXTFile(file: File, ref: RefObject<HTMLDivElement>) {
   };
 
   reader.onload = () => {
-    if (ref.current) {
-      const output = reader.result as string;
-      ref.current.innerHTML = output.replaceAll("\n", "<br />");
+    // if (ref.current) {
+    //   const output = reader.result as string;
+    //   ref.current.innerHTML = output.replaceAll("\n", "<br />");
+    // }
+    if (setter) {
+      setter(reader.result as string);
     }
   };
 
