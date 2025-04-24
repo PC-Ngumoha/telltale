@@ -1,15 +1,9 @@
 "use client";
 
-import React, {
-  RefObject,
-  useRef,
-  useEffect,
-  useState,
-  SetStateAction,
-  Dispatch,
-} from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Play, Pause, Stop } from "@/icons";
 import { Slider } from "@/components/ui/slider";
+import { scanTXTFile } from "@/utils";
 
 export default function Home() {
   const [isPlaying, setPlaying] = useState(false);
@@ -111,16 +105,7 @@ export default function Home() {
           speechSynthesis.cancel();
           setPlaying(false);
           setSentenceIndex(null); // clears the highlighting
-          // console.log("Done speaking");
         };
-
-        // utterance.onresume = () => {
-        //   console.log("Resumed speaking");
-        // };
-
-        // utterance.onstart = () => {
-        //   console.log("Started speaking");
-        // };
 
         // Keeping track of current sentence being spoken by TTS
         utterance.onboundary = (evt) => {
@@ -205,7 +190,7 @@ export default function Home() {
         <div
           className="w-5/6 h-[50vh] p-4 bg-primary-light text-secondary-main font-literata
             placeholder:font-literata rounded tracking-wide leading-relaxed
-            shadow-sm shadow-gray-500 font-medium overflow-y-auto"
+            shadow-sm shadow-gray-500 font-medium overflow-y-hidden"
           contentEditable={false}
           style={{ whiteSpace: "pre-line" }}
         >
@@ -326,23 +311,4 @@ export default function Home() {
       </div>
     </main>
   );
-}
-
-// UTILITY FUNCTIONS
-
-/**
- * Utility function: Read .txt files
- */
-function scanTXTFile(file: File, setter: Dispatch<SetStateAction<string>>) {
-  const reader = new FileReader();
-
-  reader.onerror = () => {
-    alert("Failed to read the file for unknown reasons");
-  };
-
-  reader.onload = () => {
-    setter(reader.result as string);
-  };
-
-  reader.readAsText(file);
 }
