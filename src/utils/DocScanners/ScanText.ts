@@ -14,7 +14,13 @@ export default function scanTXTFile(file: File, setter: Dispatch<SetStateAction<
   };
 
   reader.onload = () => {
-    setter(reader.result as string);
+    const fileContent = reader.result as string;
+
+    if (fileContent.length === 0) {
+      alert('Error processing file: File is empty');
+    } else {
+      setter(fileContent);
+    }
   };
 
   reader.readAsText(file);
