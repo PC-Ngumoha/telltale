@@ -8,17 +8,20 @@ All notable changes to this project will be documented in this file.
 
 **Initial Release (MVP)**
 
-🎉 Features:
+🎉 Following Features Are Available:
 
 - Upload and read `.txt` files.
 - Text-to-speech playback using browser-native TTS.
-- Minimalist UI design with Playfair Display, Literata, and Satoshi fonts.
+- Minimalist UI design.
 - Non-editable book display for reading-only experience.
+- Play, Pause, Resume and Stop Text-to-speech playback functionality.
+- Rate & Pitch functionality.
+- Browser-native TTS voice selection functionality.
 
 🛠️ Tech Stack:
 
-- Next.js with App Router
-- Tailwind CSS v4 (CSS-based config)
+- Next.js `v15.3.0` with App Router
+- Tailwind CSS `v4` (CSS-based config)
 
 ---
 
